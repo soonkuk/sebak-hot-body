@@ -9,7 +9,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/apcera/termtables"
+	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 
 	"github.com/spikeekips/sebak-hot-body/hotbody"
@@ -251,53 +251,44 @@ func runResult() {
 	formatAddress := func(s string) string {
 		return fmt.Sprintf("%s...%s", s[:13], s[len(s)-13:])
 	}
-
-	table := termtables.CreateTable()
-
-	if !flagBrief {
-		table.AddRow(alignHead("config"), alignKey("testing time"), alignValue(config.Timeout))
-		table.AddRow("", alignKey("concurrent requests"), alignValue(config.T))
-		table.AddRow("", alignKey("initial account"), alignValue(formatAddress(config.InitAccount)))
-		table.AddRow("", alignKey("request timeout"), alignValue(config.RequestTimeout))
-		table.AddRow("", alignKey("confirm duration"), alignValue(config.ConfirmDuration))
-		table.AddRow("", alignKey("operations"), alignValue(config.Operations))
-		table.AddSeparator()
-	}
+	table := tablewriter.NewWriter(os.Stdout)
+	var Row = [][]string{}
 
 	if !flagBrief {
-		table.AddRow(alignHead("network"), alignKey("network id"), alignValue(config.Node.Policy.NetworkID))
-		table.AddRow("", alignKey("initial balance"), alignValue(config.Node.Policy.InitialBalance))
-		table.AddRow("", alignKey("block time"), alignValue(config.Node.Policy.BlockTime))
-		table.AddRow("", alignKey("base reserve"), alignValue(config.Node.Policy.BaseReserve))
-		table.AddRow("", alignKey("base fee"), alignValue(config.Node.Policy.BaseFee))
-		table.AddSeparator()
-	}
-
-	if !flagBrief {
-		table.AddRow(alignHead("node"), alignKey("endpoint"), alignValue(config.Node.Node.Endpoint))
-		table.AddRow("", alignKey("address"), alignValue(formatAddress(config.Node.Node.Address)))
-		table.AddRow("", alignKey("state"), alignValue(config.Node.Node.State))
-		table.AddRow("", alignKey("block height"), alignValue(config.Node.Block.Height))
-		table.AddRow("", alignKey("block hash"), alignValue(formatAddress(config.Node.Block.Hash)))
-		table.AddRow("", alignKey("block totaltxs"), alignValue(config.Node.Block.TotalTxs))
-		table.AddRow("", alignKey("block totalops"), alignValue(config.Node.Block.TotalOps))
-		table.AddSeparator()
+		Row = append(Row, []string{alignHead("config"), alignKey("testing time"), alignValue(config.Timeout)})
+		Row = append(Row, []string{alignHead("config"), alignKey("concurrent requests"), alignValue(config.T)})
+		Row = append(Row, []string{alignHead("config"), alignKey("initial account"), alignValue(formatAddress(config.InitAccount))})
+		Row = append(Row, []string{alignHead("config"), alignKey("request timeout"), alignValue(config.RequestTimeout)})
+		Row = append(Row, []string{alignHead("config"), alignKey("confirm duration"), alignValue(config.ConfirmDuration)})
+		Row = append(Row, []string{alignHead("config"), alignKey("operations"), alignValue(config.Operations)})
+		Row = append(Row, []string{alignHead("network"), alignKey("network id"), alignValue(config.Node.Policy.NetworkID)})
+		Row = append(Row, []string{alignHead("network"), alignKey("initial balance"), alignValue(config.Node.Policy.InitialBalance)})
+		Row = append(Row, []string{alignHead("network"), alignKey("block time"), alignValue(config.Node.Policy.BlockTime)})
+		Row = append(Row, []string{alignHead("network"), alignKey("base reserve"), alignValue(config.Node.Policy.BaseReserve)})
+		Row = append(Row, []string{alignHead("network"), alignKey("base fee"), alignValue(config.Node.Policy.BaseFee)})
+		Row = append(Row, []string{alignHead("node"), alignKey("endpoint"), alignValue(alignValue(config.Node.Node.Endpoint))})
+		Row = append(Row, []string{alignHead("node"), alignKey("address"), formatAddress(config.Node.Node.Address)})
+		Row = append(Row, []string{alignHead("node"), alignKey("state"), alignValue(config.Node.Node.State)})
+		Row = append(Row, []string{alignHead("node"), alignKey("block height"), alignValue(config.Node.Block.Height)})
+		Row = append(Row, []string{alignHead("node"), alignKey("block hash"), alignValue(formatAddress(config.Node.Block.Hash))})
+		Row = append(Row, []string{alignHead("node"), alignKey("block totaltxs"), alignValue(config.Node.Block.TotalTxs)})
+		Row = append(Row, []string{alignHead("node"), alignKey("block totalops"), alignValue(config.Node.Block.TotalOps)})
 	}
 
 	lastTime := records[len(records)-1].GetTime()
 
 	if !flagBrief {
-		table.AddRow(alignHead("time"), alignKey("started"), alignValue(FormatISO8601(started)))
-		table.AddRow("", alignKey("ended"), alignValue(FormatISO8601(lastTime)))
-		table.AddRow("", alignKey("total elapsed"), alignValue(lastTime.Sub(started)))
-		table.AddSeparator()
+		Row = append(Row, []string{alignHead("time"), alignKey("started"), alignValue(FormatISO8601(started))})
+		Row = append(Row, []string{alignHead("time"), alignKey("ended"), alignValue(FormatISO8601(lastTime))})
+		Row = append(Row, []string{alignHead("time"), alignKey("total elapsed"), alignValue(lastTime.Sub(started))})
 	}
 
 	{
-		table.AddRow(alignHead("result"), alignKey("# requests"), alignValue(len(records)))
-		table.AddRow("", alignKey("# operations"), alignValue(len(records)*config.Operations))
-		table.AddRow(
-			"",
+
+		Row = append(Row, []string{alignHead("result"), alignKey("# requests"), alignValue(len(records))})
+		Row = append(Row, []string{alignHead("result"), alignKey("# operations"), alignValue(len(records) * config.Operations)})
+		Row = append(Row, []string{
+			alignHead("result"),
 			alignKey("error rates"),
 			alignValue(
 				fmt.Sprintf(
@@ -307,40 +298,40 @@ func runResult() {
 					len(records),
 				),
 			),
-		)
-		table.AddRow("", alignKey("max elapsed time"), alignValue(maxElapsedTime/float64(10000000000)))
-		table.AddRow("", alignKey("min elapsed time"), alignValue(minElapsedTime/float64(10000000000)))
-
-		table.AddRow("", alignKey("distribution"), "")
+		})
+		Row = append(Row, []string{alignHead("result"), alignKey("max elapsed time"), alignValue(maxElapsedTime / float64(10000000000))})
+		Row = append(Row, []string{alignHead("result"), alignKey("min elapsed time"), alignValue(minElapsedTime / float64(10000000000))})
+		Row = append(Row, []string{alignHead("result"), alignKey("distribution"), ""})
 		for _, e := range elsKeys {
 			span := int(float64(e) / float64(10000000000))
 			c := els[float64(e)]
 
-			table.AddRow(
-				"",
-				"",
-				alignValue(fmt.Sprintf(
-					"%2d-%-2d: %8.5f％ / %5d",
-					span,
-					span+int(step/float64(10000000000)),
-					float64(c)/float64(len(records))*100,
-					c,
-				)),
-			)
+			Row = append(Row, []string{
+				alignHead("result"),
+				"", 
+				alignValue(
+					fmt.Sprintf(
+						"%2d-%-2d: %8.5f％ / %5d",
+						span,
+						span+int(step/float64(10000000000)),
+						float64(c)/float64(len(records))*100,
+						c,
+					),
+				),
+			})
 		}
 
 		totalSeconds := lastTime.Sub(started).Seconds()
 
 		ops := float64((len(records))*config.Operations) / float64(totalSeconds)
-		table.AddRow("", alignKey("expected OPS"), alignValue(int(ops)))
+		Row = append(Row, []string{alignHead("result"), alignKey("expected OPS"), string(int(ops))})
 		ops = float64((len(records)-countError)*config.Operations) / float64(totalSeconds)
-		table.AddRow("", alignKey("real OPS"), alignValue(int(ops)))
+		Row = append(Row, []string{alignHead("result"), alignKey("real OPS"), string(int(ops))})
 	}
 
 	{
-		table.AddSeparator()
 		if countError < 1 {
-			table.AddRow(alignHead("error"), alignKey("no error"), "")
+			Row = append(Row, []string{alignHead("error"), alignKey("no error"), ""})
 		} else {
 			var c int
 			for errorType, errorCount := range errorTypes {
@@ -349,7 +340,7 @@ func runResult() {
 					h = alignHead("error")
 				}
 				c++
-				table.AddRow(
+				Row = append(Row, []string{
 					h,
 					alignKey(string(errorType)),
 					alignValue(
@@ -362,15 +353,14 @@ func runResult() {
 							),
 						),
 					),
-				)
+				})
 			}
 		}
 	}
 
 	{
-		table.AddSeparator()
 		if len(sebakErrors) < 1 {
-			table.AddRow(alignHead("sebak-error"), alignKey("no error"), "")
+			Row = append(Row, []string{alignHead("sebak-error"), alignKey("no error"), ""})
 		} else {
 			var countSEBAKError int
 			for _, errorCount := range sebakErrors {
@@ -384,7 +374,7 @@ func runResult() {
 					h = alignHead("sebak-error")
 				}
 				c++
-				table.AddRow(
+				Row = append(Row, []string{
 					h,
 					alignKey(fmt.Sprintf("sebak-error-%d", int(errorType))),
 					alignValue(
@@ -397,11 +387,14 @@ func runResult() {
 							),
 						),
 					),
-				)
+				})
 			}
 		}
 	}
-	fmt.Fprintf(os.Stdout, table.Render())
+	table.SetAutoMergeCells(true)
+	table.SetRowLine(true)
+	table.AppendBulk(Row)
+	table.Render()
 
 	os.Exit(0)
 }
